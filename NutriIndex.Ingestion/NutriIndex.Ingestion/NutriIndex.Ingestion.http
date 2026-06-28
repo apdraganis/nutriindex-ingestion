@@ -1,0 +1,6 @@
+@NutriIndex.Ingestion_HostAddress = http://localhost:5153
+
+GET {{NutriIndex.Ingestion_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
