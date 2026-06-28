@@ -4,7 +4,7 @@ using RabbitMQ.Client;
 using System.Text;
 using System.Text.Json;
 
-namespace NutriIndex.Ingestion.Services;
+namespace NutriIndex.Ingestion.Services.RabbitMq;
 
 public class RabbitMQEventPublisher(ILogger<RabbitMQEventPublisher> _logger) : IEventPublisher
 {

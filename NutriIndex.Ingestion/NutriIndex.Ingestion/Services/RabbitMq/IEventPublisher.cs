@@ -1,6 +1,6 @@
 ﻿using NutriIndex.Ingestion.Models;
 
-namespace NutriIndex.Ingestion.Services;
+namespace NutriIndex.Ingestion.Services.RabbitMq;
 
 public interface IEventPublisher
 {

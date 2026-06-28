@@ -1,4 +1,4 @@
-﻿namespace NutriIndex.Ingestion.Services;
+﻿namespace NutriIndex.Ingestion.Services.HttpClient;
 
 public class OpenFoodFactsClient
 {
