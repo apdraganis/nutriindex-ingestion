@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 using NutriIndex.Ingestion.Models;
+using NutriIndex.Ingestion.Repositories;
 
 namespace NutriIndex.Ingestion.Controllers
 {
@@ -8,13 +9,13 @@ namespace NutriIndex.Ingestion.Controllers
     [Route("api/v1/products")]
     public class IngestionController : ControllerBase
     {
-        IMongoCollection<OutboxMessage> _outboxCollection;
+        private readonly IOutboxRepository _outboxRepository;
         ILogger<IngestionController> _logger;
 
-        public IngestionController(ILogger<IngestionController> logger, IMongoDatabase _db)
+        public IngestionController(ILogger<IngestionController> logger, IOutboxRepository outboxRepository)
         {
             _logger = logger;
-            _outboxCollection = _db.GetCollection<OutboxMessage>("outbox");
+            _outboxRepository = outboxRepository;
         }
 
         // api/v1/products/ingest
@@ -28,16 +29,19 @@ namespace NutriIndex.Ingestion.Controllers
                 request.EventId, request.Payload.Barcode);
 
             // 1. Wrap request payload into Outbox message, for mongodb
-            var outboxMessage = new OutboxMessage
-            {
-                EventData = request
-            };
+            var outboxMessage = new OutboxMessage { EventData = request };
 
-            // 2. Insert it into MongoDb
+            // 2. Insert it into MongoDb. Background Worker will try to publish it.
             try
             {
-                await _outboxCollection.InsertOneAsync(outboxMessage);
+                await _outboxRepository.SaveMessageAsync(outboxMessage);
                 _logger.LogInformation("Successfully staged message {EventId} into the Outbox.", request.EventId);
+            }
+            catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
+            {
+                // 409 Conflict indicates the resource/event has already been processed or received
+                _logger.LogWarning("Duplicate event detected and blocked: {EventId}", request.EventId);
+                return Conflict(new { message = "This event has already been processed." });
             }
             catch (Exception ex)
             {
@@ -45,7 +49,7 @@ namespace NutriIndex.Ingestion.Controllers
                 return StatusCode(500, "Internal error saving record.");
             }
 
-            // Returning 202 Accepted to acknowledge receipt
+            // 3. Return 202 Accepted to acknowledge receipt
             return Accepted(new { message = "Payload received successfully", correlationId = request.CorrelationId });
         }
     }
