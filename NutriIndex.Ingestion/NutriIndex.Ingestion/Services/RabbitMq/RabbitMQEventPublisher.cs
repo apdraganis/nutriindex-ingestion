@@ -8,7 +8,7 @@ namespace NutriIndex.Ingestion.Services.RabbitMq;
 
 public class RabbitMQEventPublisher(ILogger<RabbitMQEventPublisher> _logger) : IEventPublisher
 {
-    private readonly string _hostname = "localhost";
+    private readonly string _hostname = "rabbitmq";
     private readonly string _queueName = "product.ingested";
 
     public async Task PublishAsync(ProductIngestedEvent @event)
